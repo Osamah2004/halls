@@ -1,23 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firestore URLs Table</title>
-</head>
-
-<body>
-    <table id="urls">
-        <tr>
-            <th>Key</th>
-            <th>Action</th>
-        </tr>
-    </table>
-
-    <script type="module">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Firestore URLs Table</title>
+        <script src="https://smtpjs.com/v3/smtp.js"></script>
+    </head>
+    <body dir="rtl">
+        <h2 id="hall"></h2>
+        <table id="urls">
+            <tr>
+                <th>المدخل</th>
+                <th>الرابط</th>
+                <th>البلاغ</th>
+            </tr>
+        </table>
+        
+        <h2>إضافة قاعة</h2>
+        <form id="myForm" method="post">
+            <label for="document">رمز القاعة:</label>
+            <input type="text" id="document_" required></input>
+            <br>
+            <button type="submit">اضغط هنا</button>
+        </form>
+        <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc,addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         // Firebase configuration
         const firebaseConfig = {
@@ -29,6 +37,39 @@
             appId: "1:787903310415:web:4b07edc57c786f50b2183a",
             measurementId: "G-M99D71EL0Q"
         };
+        
+        // Create a new document or overwrite an existing document in Firestore
+        // Updated createDocument function to use setDoc for a specific document ID
+        async function createDocument() {
+            const documentName = document.getElementById('document_').value;
+
+            // Check if document name is provided
+            if (!documentName) {
+                console.error("Document name is required.");
+                return;
+            }
+
+            try {
+                // Define the document reference in Firestore with a specific path
+                const docRef = doc(db, 'COMPUTER', documentName);
+
+                // Set or overwrite the document with specified fields
+                await setDoc(docRef, {
+                    'مدخل 1': '',
+                    'مدخل 2': '',
+                    'مدخل 3': '',
+                    'مدخل 4': '',
+                    'مدخل 5': '',
+                    'مدخل 6': ''
+                });
+
+                console.log("Document successfully created!");
+                location.href = 'index.html?college=COMPUTER&hall=' + document.getElementById('document_').value
+            } catch (error) {
+                console.error("Error creating document:", error);
+            }
+        }
+
 
         // Initialize Firebase and Firestore
         const app = initializeApp(firebaseConfig);
@@ -42,11 +83,11 @@
                 hall: params.get("hall")
             };
         }
+        const { college, hall } = getUrlParams();
+        document.getElementById('hall').textContent = ('كلية الحاسب الآلي, قاعة: ' + hall)
 
         // Function to fetch document data from Firestore based on URL parameters
         async function getDocumentData() {
-            const { college, hall } = getUrlParams();
-
             if (!college || !hall) {
                 console.error("Missing college or hall parameter in URL");
                 return;
@@ -68,6 +109,9 @@
                 console.error("Error retrieving document:", error);
             }
         }
+        document.getElementById('myForm').addEventListener('submit', function (event) {
+            event.preventDefault()
+        });
 
         // Function to populate table with sorted key-value pairs
         function populateTable(data) {
@@ -85,6 +129,7 @@
             for (const key of sortedKeys) {
                 const url = data[key];
                 const row = table.insertRow();
+                const report = table.insertRow();
 
                 // Insert cell for the key
                 const keyCell = row.insertCell(0);
@@ -92,18 +137,33 @@
 
                 // Insert cell for the action button
                 const actionCell = row.insertCell(1);
+                const reportCell = row.insertCell(2);
                 const button = document.createElement("button");
-                button.textContent = "Go to URL";
+                const reportButton = document.createElement("button");
+                button.textContent = "الذهاب الى الرابط";
+                reportButton.textContent = "بلاغ عن فيديو";
                 button.onclick = () => window.open(url, "_blank"); // Opens the URL in a new tab
+                if (!url) {
+                    button.textContent = 'غير متوفر, انقر للإضافة';
+                    button.onclick = async () => {
+                        let link = prompt('أدخل رابط القاعة');
+                        if (link != null) {
+                            await updateDoc(doc(db,'COMPUTER',hall),{[key]:link});
+                            location.reload();
+                        }
+                    };
+                }
+                reportButton.onclick = () => window.location.href = `mailto:thefirebaseproject00@gmail.com?subject=${college + " " + hall + " " + key} video report&body=This video is inacurrate ${url} %0Aplease delete it from the website.`; // Opens the URL in a new tab
                 actionCell.appendChild(button);
+                reportCell.appendChild(reportButton);
             }
         }
 
         // Fetch and populate table on page load
         document.addEventListener("DOMContentLoaded", () => {
             getDocumentData();
+            document.getElementById('myForm').addEventListener("submit",createDocument);
         });
-    </script>
-</body>
-
+        </script>
+    </body>
 </html>
