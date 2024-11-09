@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore URLs Table</title>
+</head>
+
+<body>
+    <table id="urls">
+        <tr>
+            <th>Key</th>
+            <th>Action</th>
+        </tr>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZihKyU3Ls7-EXrPQ4pn3yVoaGQO98TEE",
+            authDomain: "halls-locations.firebaseapp.com",
+            projectId: "halls-locations",
+            storageBucket: "halls-locations.firebasestorage.app",
+            messagingSenderId: "787903310415",
+            appId: "1:787903310415:web:4b07edc57c786f50b2183a",
+            measurementId: "G-M99D71EL0Q"
+        };
+
+        // Initialize Firebase and Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to get URL parameters
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                college: params.get("college"),
+                hall: params.get("hall")
+            };
+        }
+
+        // Function to fetch document data from Firestore based on URL parameters
+        async function getDocumentData() {
+            const { college, hall } = getUrlParams();
+
+            if (!college || !hall) {
+                console.error("Missing college or hall parameter in URL");
+                return;
+            }
+
+            try {
+                console.log('college: ' +  college);
+                console.log('hall: ' + hall);
+                const docRef = doc(db, college, hall);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    populateTable(data); // Pass the key-value pairs to the table function
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.error("Error retrieving document:", error);
+            }
+        }
+
+        // Function to populate table with sorted key-value pairs
+        function populateTable(data) {
+            const table = document.getElementById("urls");
+
+            // Clear existing rows (except headers) if refreshing data
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+
+            // Get sorted keys
+            const sortedKeys = Object.keys(data).sort();
+
+            // Iterate over sorted keys and create a new row for each
+            for (const key of sortedKeys) {
+                const url = data[key];
+                const row = table.insertRow();
+
+                // Insert cell for the key
+                const keyCell = row.insertCell(0);
+                keyCell.textContent = key;
+
+                // Insert cell for the action button
+                const actionCell = row.insertCell(1);
+                const button = document.createElement("button");
+                button.textContent = "Go to URL";
+                button.onclick = () => window.open(url, "_blank"); // Opens the URL in a new tab
+                actionCell.appendChild(button);
+            }
+        }
+
+        // Fetch and populate table on page load
+        document.addEventListener("DOMContentLoaded", () => {
+            getDocumentData();
+        });
+    </script>
+</body>
+
+</html>
